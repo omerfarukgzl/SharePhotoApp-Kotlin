@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "109144863542",
+    "project_id": "sharephoto-8d120",
+    "storage_bucket": "sharephoto-8d120.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:109144863542:android:27d76db39fc96d1f4db997",
+        "android_client_info": {
+          "package_name": "com.example.sharephoto"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "109144863542-3vi62a5sn0s9rjku52m5belfsvfuulmh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCItSFAFha9tNBoT6XISC-NXJIMpuFtgC8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "109144863542-3vi62a5sn0s9rjku52m5belfsvfuulmh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
