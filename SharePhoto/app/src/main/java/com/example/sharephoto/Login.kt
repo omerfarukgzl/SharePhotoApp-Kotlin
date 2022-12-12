@@ -20,29 +20,63 @@ class Login : AppCompatActivity() {
 
         binding  = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        val  girisYapanKullanici = auth.currentUser
+        if(girisYapanKullanici!=null)// kullanıcı girmis dmemektir
+        {
+            val intent = Intent(this,MainActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
     }
 
     fun girisButtonClick(view: View)
     {
+        var email = binding.editTextTextEmailAddress.text.toString()
+        var password = binding.editTextTextPassword.text.toString()
+
+        if(! email.equals("") && !password.equals("") )
+        {
+            auth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        val girisYapanKullanici = auth.currentUser!!
+                        val girisYapanKullaniciMail = girisYapanKullanici.email.toString()
+                        Toast.makeText(this,"Merhaba ${girisYapanKullaniciMail}",Toast.LENGTH_LONG).show()
+                        val intent = Intent(this,MainActivity::class.java)
+                        startActivity(intent)
+                        finish()
+                    }
+                }.addOnFailureListener{exception->
+                    Toast.makeText(applicationContext,exception.localizedMessage, Toast.LENGTH_LONG).show() // if bloğu hata olursa else yerine oddOnFailureListener ile kontrol ettik
+                }
+
+        }
+
 
     }
     fun kayitButtonClick(view: View)
     {
         var email = binding.editTextTextEmailAddress.text.toString()
-        var password = binding.editTextNumberPassword.text.toString()
+        var password = binding.editTextTextPassword.text.toString()
 
         // email ve password kullanarak kullanıcı oluştur
         // asenkron listener özelliği mevcuttur . örneğin tamamlandığında hata aldığında dinle başarılı olduğunda vs.
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    val intent = Intent(this,MainActivity::class.java)
-                    startActivity(intent)
-                    finish()
+        if(! email.equals("") && ! password.equals("") )
+        {
+            auth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        val intent = Intent(this,MainActivity::class.java)
+                        binding.editTextTextEmailAddress.text=null
+                        binding.editTextTextPassword.text = null
+                        /*startActivity(intent)
+                        finish()*/
+                    }
+                }.addOnFailureListener{exception->
+                    Toast.makeText(applicationContext,exception.localizedMessage, Toast.LENGTH_LONG).show() // if bloğu hata olursa else yerine oddOnFailureListener ile kontrol ettik
                 }
-            }.addOnFailureListener{exception->
-                Toast.makeText(applicationContext,exception.localizedMessage, Toast.LENGTH_LONG).show() // if bloğu hata olursa else yerine oddOnFailureListener ile kontrol ettik
-            }
+
+        }
 
     }
 }
