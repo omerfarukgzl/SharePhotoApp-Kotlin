@@ -1,33 +1,33 @@
 {
   "project_info": {
-    "project_number": "109144863542",
-    "project_id": "sharephoto-8d120",
-    "storage_bucket": "sharephoto-8d120.appspot.com"
+    "project_number": "693137641358",
+    "project_id": "share-photo-7790f",
+    "storage_bucket": "share-photo-7790f.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:109144863542:android:27d76db39fc96d1f4db997",
+        "mobilesdk_app_id": "1:693137641358:android:ba13772b89291ca8d59edf",
         "android_client_info": {
           "package_name": "com.example.sharephoto"
         }
       },
       "oauth_client": [
         {
-          "client_id": "109144863542-3vi62a5sn0s9rjku52m5belfsvfuulmh.apps.googleusercontent.com",
+          "client_id": "693137641358-6u5t943e8ast54d3uv5qm90n41ia530u.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCItSFAFha9tNBoT6XISC-NXJIMpuFtgC8"
+          "current_key": "AIzaSyCOatQpINO2lzYB-6SUWMIjRHgmIBYEAyU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "109144863542-3vi62a5sn0s9rjku52m5belfsvfuulmh.apps.googleusercontent.com",
+              "client_id": "693137641358-6u5t943e8ast54d3uv5qm90n41ia530u.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

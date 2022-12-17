@@ -303,11 +303,10 @@ Not:// izin isteme ====>
                     secilen gorseli al --> decoderla --> Bitmape çevir --> Bitmapı imageView e ata(setBitmap)
 
 
-4) secilen gorsel null değilse firebase gonder
-    öncelikle firebase de Database ve storage etkin hale getirilir
-     storage etkin hale getirilirken depolanacak bulut bolge olarak turkiye için eurp seçilebilir.
-        Daha sonra image depolayacğımız için verileri sınıflandırmak adına image klasoru acılır.
 
+
+
+     ------- Gorsel Secimi ------
 
                 fun imageChooseClick(view: View)
                 {
@@ -366,6 +365,143 @@ Not:// izin isteme ====>
 
                     super.onActivityResult(requestCode, resultCode, data)
                 }
+
+
+        ------- Gorsel Paylasimi -------
+
+4) secilen gorsel null değilse firebase gonder
+    öncelikle firebase de Database ve storage etkin hale getirilir
+     storage etkin hale getirilirken depolanacak bulut bolge olarak turkiye için eurp seçilebilir.
+        Daha sonra image depolayacğımız için verileri sınıflandırmak adına image klasoru acılır.
+
+    Database olarak fireStore Database kullanılacak. Realtime dan daha gelişiş bir teknolojidir.
+    Daha sonra rules kısmından  allow read, write: if request.auth!=null; yazılır.
+        Bu kod ile sadece giriş yapmış kullanıcıların veri okuyup yazmasına izin verir.
+
+
+    Öcelikle fotograf paylaşmak için storage ( depo ) işlemiyle başlanır.
+        Storage, Database Ve Authentication işlemleri için nesneler tanımlanır.
+
+    Daha sonra gorsel nereye kayedeilecek bu referans ile belirlenir
+    Daha sonra gorsel referansı oluşturulur ve secilen gorsel kaydedilir.
+    Resimler Storage içinde image klasörü altında kaydedildi ve bu kaydedilen resimlerin url lerini alıp database e kaydedildi.
+    Bu url yanında database'e kaydedilen kullanıcı bilgileri ve yorum bilgisi kaydedildi.
+
+
+        val reference = storage.reference // referans oluşturduk --> gorsel nereye kayedeilecek bu referans ile belirlenir
+
+        // storage.reference depomuzun kendisi
+        // storage.reference.child("gorseller") depomuzun içindeki gorseller klasörü
+        // storage.reference.child("gorseller").child("gorsel.jpg") depomuzun içindeki gorseller klasörü içindeki gorsel.jpg dosyası
+
+
+        val gorselIsmi= "${UUID.randomUUID()}.jpg" // rastgele bir isim oluşturduk ---> sürekli aynı isimde oluşturup üzerine kaydetmesin diye random isim oluşturduk
+        val gorselReference = reference.child("images").child(gorselIsmi) // gorsel referansı oluşturduk
+        if(secilenGorsel!=null)
+        gorselReference.putFile(secilenGorsel!!).addOnSuccessListener { taskSnapshot -> // gorsel referansına secilen gorseli yükledik
+            // yuklenen birseyin yerini öğrenebilmek için yeniden referans oluşturmamız gerekiyor. taskSnapshot ile yuklenen gorselin referansını alıyoruz.
+            val yuklenenGorselReference = FirebaseStorage.getInstance().reference.child("images").child(gorselIsmi)
+
+            yuklenenGorselReference.downloadUrl.addOnSuccessListener { uri -> // yuklenen gorselin referansına downloadUrl ile indirme linkini alıyoruz
+                val downloadUrl = uri.toString() // indirme linkini stringe çevirdik
+
+                // veritabanına kayıt işlemi
+                val postHashMap = hashMapOf<String,Any>() // veritabanına kayıt yaparken kullanacağımız hashmap
+                postHashMap.put("downloadUrl",downloadUrl) // indirme linkini hashmap e ekledik
+                postHashMap.put("userEmail",auth.currentUser!!.email.toString()) // kullanıcının emailini hashmap e ekledik
+                postHashMap.put("comment",binding.editTextComment.text.toString()) // kullanıcının yorumunu hashmap e ekledik
+                postHashMap.put("date", FieldValue.serverTimestamp()) // kullanıcının yorumunu hashmap e ekledik
+
+                database.collection("Posts").add(postHashMap).addOnCompleteListener { task ->
+                    if(task.isSuccessful)
+                    {
+                        // gorsel paylasma basarılı
+                        finish()
+                    }
+                }.addOnFailureListener { exception ->
+                    // gorsel paylasma basarısız
+                    Toast.makeText(applicationContext,exception.localizedMessage,Toast.LENGTH_LONG).show()
+                }
+            }.addOnFailureListener { exception ->
+                // indirme linki alınamadı
+                Toast.makeText(applicationContext,exception.localizedMessage,Toast.LENGTH_LONG).show()
+            }
+
+
+
+            Toast.makeText(applicationContext,"Yüklendi",Toast.LENGTH_LONG).show()
+        }
+
+    }
+
+
+
+
+   ------ Verileri Listeleme ------
+
+5) Veriler firebase storage dan read ile çekilir.
+    Bu read işlemi iki şekilde yapılabilir
+            1) Realtime Database --> Verileri sürekli dinler ve değişiklik olduğunda günceller.
+            2) FireStore Database --> Verileri tek seferde çeker ve değişiklik olduğunda güncellemek için refresh yapılması gerekir.
+
+
+                   fun verileriAl() {
+        // verileri  real time listeleme işlemi
+        database.collection("Posts").orderBy("date",Query.Direction.DESCENDING).addSnapshotListener{ snapshot, exception ->
+            if (exception != null) {
+                Toast.makeText(applicationContext, exception.localizedMessage, Toast.LENGTH_LONG)
+                    .show()
+            } else {
+                if (snapshot != null && snapshot.isEmpty() == false) {
+
+                    val documents = snapshot.documents
+                    for (document in documents) {
+                        val kullaniciEmail = document.get("userEmail") as String
+                        val kullaniciYorum = document.get("comment") as String
+                        val kullaniciGorselUrl = document.get("downloadUrl") as String
+                        val kullaniciTarih = document.get("date") as Timestamp
+
+                        val indirilen = Post(kullaniciEmail, kullaniciYorum, kullaniciGorselUrl, kullaniciTarih)
+                        postListesi.add(indirilen)
+                    }
+                    recyclerAdapter.notifyDataSetChanged()
+
+                }
+                else{
+                        Toast.makeText(applicationContext, "Veri Yok", Toast.LENGTH_LONG)
+                        .show()
+                }
+            }
+
+        }
+
+    }
+ // Not:  verileri belli bir filtreleme işlemi yaparak almak için  database.collection("Posts").whereEqualTo() kullanılır
+
+ // Not:  verileri sıralmak için orderBy kullanılır
+
+
+Daha sonra recycler view row oluşturulur ve bu row içinde veriler gösterilir.
+    Layout--> New Layout Resource File --> Layout Resource File --> RecyclerView Row Layout
+
+
+
+Not: // resim indirme işlemi için glide kütüphanesi veya picasso kütüphanesi kullanılabilir.
+implementation 'com.github.bumptech.glide:glide:4.11.0'
+    // glide kütüphanesi ile resim indirme işlemi
+    Glide.with(this).load(kullaniciGorselUrl).into(binding.imageView)
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    // picasso kütüphanesi ile resim indirme işlemi
+    Picasso.get().load(kullaniciGorselUrl).into(binding.imageView)
+
+
+
+
+
+
+
+
 
 
 

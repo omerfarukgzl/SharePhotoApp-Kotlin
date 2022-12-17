@@ -1,6 +1,7 @@
 package com.example.sharephoto
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,24 +13,48 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.decodeBitmap
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.sharephoto.databinding.ActivitySharePhotoBinding
-import io.grpc.internal.GrpcUtil.GrpcBuildVersion
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
+import java.util.*
 
 
 class SharePhotoActivity : AppCompatActivity() {
     var secilenGorsel : Uri ?=null
     var secilenBitmap: Bitmap ?=null
+
+
+    // firebase nesnesleri oluşturduk
+    private lateinit var storage :FirebaseStorage
+    private lateinit var auth: FirebaseAuth
+    private lateinit var database : FirebaseFirestore
+    private lateinit var recyclerAdapter: PhotoRecyclerAdapter
+
     private lateinit var binding: ActivitySharePhotoBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_share_photo)
+
+        // firabase nesnelerini tanımladık
+        storage= FirebaseStorage.getInstance()
+        auth= FirebaseAuth.getInstance()
+        database= FirebaseFirestore.getInstance()
+
+        // view binding işlemi / ekrandakş elemanlara ulaştık
         binding  = ActivitySharePhotoBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
     }
+
+    // Gorsel Secme İşlemi
     fun imageChooseClick(view: View)
     {
         if(ContextCompat.checkSelfPermission(this,Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED)
@@ -88,10 +113,52 @@ class SharePhotoActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
     }
 
+
+    // Gorsel Paylasma İşlemi
+    @SuppressLint("SuspiciousIndentation")
     fun shareButtonClick(view: View)
     {
+        val reference = storage.reference // referans oluşturduk --> gorsel nereye kayedeilecek bu referans ile belirlenir
 
+        // storage.reference depomuzun kendisi
+        // storage.reference.child("gorseller") depomuzun içindeki gorseller klasörü
+        // storage.reference.child("gorseller").child("gorsel.jpg") depomuzun içindeki gorseller klasörü içindeki gorsel.jpg dosyası
+
+
+        val gorselIsmi= "${UUID.randomUUID()}.jpg" // rastgele bir isim oluşturduk ---> sürekli aynı isimde oluşturup üzerine kaydetmesin diye random isim oluşturduk
+        val gorselReference = reference.child("images").child(gorselIsmi) // gorsel referansı oluşturduk
+        if(secilenGorsel!=null)
+        gorselReference.putFile(secilenGorsel!!).addOnSuccessListener { taskSnapshot -> // gorsel referansına secilen gorseli yükledik
+            // yuklenen birseyin yerini öğrenebilmek için yeniden referans oluşturmamız gerekiyor. taskSnapshot ile yuklenen gorselin referansını alıyoruz.
+            val yuklenenGorselReference = FirebaseStorage.getInstance().reference.child("images").child(gorselIsmi)
+
+            yuklenenGorselReference.downloadUrl.addOnSuccessListener { uri -> // yuklenen gorselin referansına downloadUrl ile indirme linkini alıyoruz
+                val downloadUrl = uri.toString() // indirme linkini stringe çevirdik
+
+                // veritabanına kayıt işlemi
+                val postHashMap = hashMapOf<String,Any>() // veritabanına kayıt yaparken kullanacağımız hashmap
+                postHashMap.put("userEmail",auth.currentUser!!.email.toString()) // kullanıcının emailini hashmap e ekledik
+                postHashMap.put("downloadUrl",downloadUrl) // indirme linkini hashmap e ekledik
+                postHashMap.put("comment",binding.commentText.text.toString()) // kullanıcının yorumunu hashmap e ekledik
+                postHashMap.put("date", FieldValue.serverTimestamp()) // kullanıcının yorum tarihini hashmap e ekledik
+                database.collection("Posts").add(postHashMap).addOnCompleteListener { task ->
+                    if(task.isSuccessful)
+                    {
+                        // gorsel paylasma basarılı
+                        Toast.makeText(this,"Yükleme İşlemi Başarılı",Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                }.addOnFailureListener { exception ->
+                    // gorsel paylasma basarısız
+                    Toast.makeText(applicationContext,exception.localizedMessage,Toast.LENGTH_LONG).show()
+                }
+            }.addOnFailureListener { exception ->
+                // indirme linki alınamadı
+                Toast.makeText(applicationContext,exception.localizedMessage,Toast.LENGTH_LONG).show()
+            }
+        }
 
     }
+
 
 }
